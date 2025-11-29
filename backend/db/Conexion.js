@@ -3,7 +3,7 @@ const { Sequelize } = require('sequelize')
 const sequelize = new Sequelize(
     'plataforma_estudiantil',
     'Kevin',
-    'Alejandra2731**',
+    '1234',
     {
         host: 'localhost',
         port: 3306,
