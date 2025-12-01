@@ -35,7 +35,7 @@ insert into roles (nombre_rol) values
 select * from roles
 
 /*Insertamos el usuario admin*/
-insert into usuarios (id_usuario, id_rol, email, password_hash) values ('1','1','admin', 'admin')
+insert into usuarios (id_usuario, id_rol, nombre, apellido, email, password_hash) values ('1','1','Admin', 'Master', 'admin@admin.com', '123456')
 
 select * from usuarios
 
