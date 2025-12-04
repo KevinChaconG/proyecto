@@ -48,7 +48,7 @@ async function iniciarSesion(){
 
         setNombreUsuario(nombreCompleto);
 
-        router.push('/productos')
+        router.push('/admin')
 
     } catch (error) {
       console.error(error);
