@@ -40,3 +40,15 @@ a {
     color-scheme: dark;
   }
 }
+
+.nav-link {
+  color: #0b4a24 !important;     
+  background-color: transparent;   
+}
+
+.nav-link.active {
+  background-color: #ffa705 !important; 
+  color: #0b4a24 !important;     
+  font-weight: bold;
+  border-radius: 10px;
+}
