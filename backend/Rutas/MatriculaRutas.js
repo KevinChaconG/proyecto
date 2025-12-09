@@ -3,7 +3,7 @@ const Matricula = require('../Modelos/Matricula');
 const Asignatura = require('../Modelos/Asignatura');
 const Usuario = require('../Modelos/Usuario');
 
-const router = express. Router();
+const router = express.Router();
 
 // ============================================
 // RUTAS PARA GESTIÓN DE MATRÍCULAS
@@ -78,7 +78,7 @@ router.get('/asignatura/:id_asignatura/estudiantes', async (req, resp) => {
         resp.json({
             mensaje: 'Lista de estudiantes matriculados',
             asignatura: {
-                id_asignatura: asignatura. id_asignatura,
+                id_asignatura: asignatura.id_asignatura,
                 nombre: asignatura.nombre_asignatura,
                 codigo: asignatura.codigo_curso
             },
@@ -99,7 +99,7 @@ router.post('/matriculas', async (req, resp) => {
 
         // Compañeros, validamos que vengan los datos obligatorios
         if (!id_asignatura || !id_estudiante) {
-            return resp.status(400). json({ mensaje: 'La asignatura y el estudiante son obligatorios' });
+            return resp.status(400).json({ mensaje: 'La asignatura y el estudiante son obligatorios' });
         }
 
         // Compañeros, verificamos que la asignatura exista
@@ -118,7 +118,7 @@ router.post('/matriculas', async (req, resp) => {
         }
 
         // Compañeros, verificamos que no esté ya matriculado
-        const matriculaExistente = await Matricula. findOne({
+        const matriculaExistente = await Matricula.findOne({
             where: { id_asignatura, id_estudiante }
         });
         if (matriculaExistente) {
@@ -188,7 +188,7 @@ router.delete('/matriculas/:id', async (req, resp) => {
         // Compañeros, guardamos los datos antes de eliminar
         const datosEliminados = {
             id_matricula: matricula.id_matricula,
-            estudiante: `${matricula.estudiante.nombre} ${matricula.estudiante. apellido}`,
+            estudiante: `${matricula.estudiante.nombre} ${matricula.estudiante.apellido}`,
             asignatura: matricula.asignatura.nombre_asignatura
         };
 

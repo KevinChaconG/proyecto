@@ -46,7 +46,7 @@ export default function EstudiantePage() {
       setUsuario(user);
       
       if (user.id_rol !== 3) {
-        alert('Acceso denegado. Solo para estudiantes.');
+        alert('Acceso denegado.Solo para estudiantes.');
         router.push('/');
         return;
       }
@@ -67,7 +67,7 @@ export default function EstudiantePage() {
   const cargarMisCursos = async (idEstudiante: number) => {
     setLoading(true);
     try {
-      const resp = await fetch('http://localhost:5050/matricula/matriculas');
+      const resp = await fetch(`http://localhost:5050/matricula/estudiante/${idEstudiante}/matriculas`);
       
       if (!resp.ok) {
         console.error('Error al cargar matrículas:', resp.status);
@@ -76,18 +76,16 @@ export default function EstudiantePage() {
       }
       
       const data = await resp.json();
-      const matriculasEstudiante = (data. matriculas || []).filter(
-        (m: any) => m.id_estudiante === idEstudiante
-      );
+      const matriculasEstudiante = data.matriculas || [];
       
       const cursosFormateados = matriculasEstudiante.map((m: any) => ({
         id_matricula: m.id_matricula,
         id_asignatura: m.id_asignatura,
-        nombre_asignatura: m.nombre_asignatura || 'Curso sin nombre',
-        codigo_curso: m.codigo_curso || 'N/A',
+        nombre_asignatura: m.asignatura?.nombre_asignatura || 'Curso sin nombre',
+        codigo_curso: m.asignatura?.codigo_curso || 'N/A',
         estado: m.estado || 'activa',
         fecha_matricula: m.fecha_matricula,
-        docente: m. docente || 'No asignado'
+        docente: m.asignatura?.docente ? `${m.asignatura.docente.nombre} ${m.asignatura.docente.apellido}` : 'No asignado'
       }));
       
       setMisCursos(cursosFormateados);
@@ -136,7 +134,7 @@ export default function EstudiantePage() {
 
     setLoading(true);
     try {
-      const resp = await fetch('http://localhost:5050/matricula/matricula', {
+      const resp = await fetch('http://localhost:5050/matricula/matriculas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -233,7 +231,7 @@ export default function EstudiantePage() {
               ].map(item => (
                 <button
                   key={item.key}
-                  onClick={() => setSeccion(item. key as Seccion)}
+                  onClick={() => setSeccion(item.key as Seccion)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -260,8 +258,8 @@ export default function EstudiantePage() {
                   }}
                   onMouseLeave={(e) => {
                     if (seccion !== item.key) {
-                      e.currentTarget.style. background = 'transparent';
-                      e.currentTarget.style. color = 'rgba(255,255,255,0.7)';
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
                     }
                   }}
                 >
@@ -288,7 +286,7 @@ export default function EstudiantePage() {
                 e.currentTarget.style.background = 'rgba(236,72,153,0.2)';
               }}
               onMouseLeave={(e) => {
-                e. currentTarget.style.background = 'rgba(236,72,153,0.1)';
+                e.currentTarget.style.background = 'rgba(236,72,153,0.1)';
               }}
             >
               🚪 Cerrar Sesión
@@ -307,7 +305,7 @@ export default function EstudiantePage() {
             {seccion === 'dashboard' && (
               <div>
                 <h2 className="mb-4" style={{ color: '#2F4858' }}>
-                  Bienvenido, {usuario?. nombre} 👋
+                  Bienvenido, {usuario?.nombre} 👋
                 </h2>
 
                 <div className="row g-4 mb-4">
@@ -453,7 +451,7 @@ export default function EstudiantePage() {
                 ) : (
                   <div className="row g-4">
                     {misCursos.map((curso) => (
-                      <div key={curso. id_matricula} className="col-12 col-md-6 col-lg-4">
+                      <div key={curso.id_matricula} className="col-12 col-md-6 col-lg-4">
                         <div className="card border-0 shadow-sm h-100">
                           <div
                             className="card-header"
@@ -463,7 +461,7 @@ export default function EstudiantePage() {
                               padding: '1. 25rem'
                             }}
                           >
-                            <h5 className="mb-0">{curso. nombre_asignatura}</h5>
+                            <h5 className="mb-0">{curso.nombre_asignatura}</h5>
                           </div>
                           <div className="card-body">
                             <p className="mb-2">
@@ -471,7 +469,7 @@ export default function EstudiantePage() {
                               <span className="badge bg-secondary">{curso.codigo_curso}</span>
                             </p>
                             <p className="mb-2">
-                              <strong>Docente:</strong> {curso. docente || 'No asignado'}
+                              <strong>Docente:</strong> {curso.docente || 'No asignado'}
                             </p>
                             <p className="mb-2">
                               <strong>Estado:</strong>{' '}
@@ -487,7 +485,7 @@ export default function EstudiantePage() {
                                   color: 'white'
                                 }}
                               >
-                                {curso. estado === 'activa'
+                                {curso.estado === 'activa'
                                   ? 'Activa'
                                   : curso.estado === 'completada'
                                   ? 'Completada'
@@ -568,7 +566,7 @@ export default function EstudiantePage() {
                               <p className="mb-2">
                                 <strong>Docente:</strong>{' '}
                                 {curso.docente
-                                  ? `${curso. docente. nombre} ${curso.docente. apellido}`
+                                  ? `${curso.docente.nombre} ${curso.docente.apellido}`
                                   : 'No asignado'}
                               </p>
                               <p className="text-muted mb-3" style={{ minHeight: '60px' }}>

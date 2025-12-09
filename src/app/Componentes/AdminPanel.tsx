@@ -108,7 +108,7 @@ export default function AdminPanel({
         return;
       }
 
-      const resp = await fetch("http://localhost:5050/matricula/matricula", {
+      const resp = await fetch("http://localhost:5050/matricula/matriculas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

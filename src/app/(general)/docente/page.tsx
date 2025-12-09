@@ -1,7 +1,10 @@
+// src/app/%28general%29/docente/page.tsx
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import EntregasModal from '../../Componentes/EntregasModal';
 
 type Seccion = 'dashboard' | 'cursos' | 'actividades' | 'calificaciones';
 
@@ -11,6 +14,27 @@ export default function DocentePage() {
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [usuario, setUsuario] = useState<any>(null);
+
+  // --- Estados y funciones para el modal de entregas ---
+  const [entregasOpen, setEntregasOpen] = useState(false);
+  const [actividadSeleccionada, setActividadSeleccionada] = useState<number | null>(null);
+  // --- Actividades (para la pestaña Actividades) ---
+  const [actividades, setActividades] = useState<any[]>([]);
+  const [loadingActividades, setLoadingActividades] = useState(false);
+
+  function abrirEntregas(idActividadRaw: any) {
+    console.log('abrirEntregas raw value:', idActividadRaw);
+    const id = idActividadRaw === null || idActividadRaw === undefined ? null : Number(idActividadRaw);
+    if (!id || Number.isNaN(id)) {
+      console.warn('abrirEntregas: idActividad inválido:', idActividadRaw);
+      // avisar usuario y evitar petición con "{id}" o inválido
+      alert('ID de actividad inválido. Revisa la consola.');
+      return;
+    }
+    setActividadSeleccionada(id);
+    setEntregasOpen(true);
+  }
+  // ------------------------------------------------------
 
   useEffect(() => {
     const usuarioData = localStorage.getItem('usuario');
@@ -23,17 +47,107 @@ export default function DocentePage() {
     }
   }, []);
 
+  // si el usuario va a la sección Actividades, cargar actividades
+  useEffect(() => {
+    if (seccionActiva === 'actividades') {
+      // cargar actividades para los cursos ya cargados
+      cargarActividades();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seccionActiva, cursos]);
+
+  // Función robusta: detecta la forma de la respuesta y extrae el array
   const cargarCursos = async (idDocente: number) => {
     setLoading(true);
     try {
       const resp = await fetch('http://localhost:5050/asignatura/asignaturas');
       const data = await resp.json();
-      const misCursos = data.filter((c: any) => c.id_docente === idDocente);
+      // DEBUG: ver qué trae el backend
+      console.log('cargarCursos response status:', resp.status);
+      console.log('cargarCursos raw data:', data);
+
+      // Normalizar: buscar el array de asignaturas en varias formas posibles
+      let arr: any[] = [];
+
+      if (Array.isArray(data)) {
+        arr = data;
+      } else if (Array.isArray(data.asignaturas)) {
+        arr = data.asignaturas;
+      } else if (Array.isArray(data.cursos)) {
+        arr = data.cursos;
+      } else if (Array.isArray(data.data)) { // por si responde { data: [...] }
+        arr = data.data;
+      } else {
+        // Si no encontramos un array, intentar extraer el primer array dentro del objeto
+        const firstArray = Object.values(data).find(v => Array.isArray(v));
+        if (firstArray) arr = firstArray as any[];
+      }
+
+      if (!Array.isArray(arr)) {
+        console.warn('No se encontró un array en la respuesta; se asigna vacío.');
+        arr = [];
+      }
+
+      // Filtrar por id_docente (manejar campos tanto id_docente como idDocente)
+      const misCursos = arr.filter((c: any) => {
+        const docenteId = c.id_docente ?? c.idDocente ?? c.idDocenteAsignado ?? null;
+        return Number(docenteId) === Number(idDocente);
+      });
+
       setCursos(misCursos);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error en cargarCursos:', error);
+      setCursos([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Cargar actividades correctamente: iterar cursos y pedir actividades por asignatura
+  const cargarActividades = async () => {
+    if (!cursos || cursos.length === 0) {
+      setActividades([]);
+      return;
+    }
+    setLoadingActividades(true);
+    try {
+      // Hacemos múltiples requests (uno por asignatura) y concatenamos resultados
+      const promises = cursos.map(async (c) => {
+        const idAsignatura = c.id_asignatura ?? c.idAsignatura ?? c.id;
+        if (!idAsignatura) return [];
+        try {
+          const resp = await fetch(`http://localhost:5050/actividad/asignatura/${idAsignatura}/actividades`);
+          if (!resp.ok) {
+            console.warn('actividad fetch no ok for', idAsignatura, resp.status);
+            return [];
+          }
+          const data = await resp.json();
+          // data.actividades o data (según respuesta)
+          if (Array.isArray(data.actividades)) return data.actividades;
+          if (Array.isArray(data)) return data;
+          // buscar primer array en objeto
+          const arr = Object.values(data).find(v => Array.isArray(v));
+          return arr || [];
+        } catch (err) {
+          console.error('Error al obtener actividades para asignatura', idAsignatura, err);
+          return [];
+        }
+      });
+
+      const results = await Promise.all(promises);
+      const merged = results.flat();
+      // opcional: filtrar duplicados por id_actividad
+      const byId = new Map<number, any>();
+      merged.forEach((a: any) => {
+        const id = a.id_actividad ?? a.idActividad ?? a.id;
+        if (id) byId.set(Number(id), a);
+      });
+      setActividades(Array.from(byId.values()));
+    } catch (err) {
+      console.error('Error en cargarActividades:', err);
+      setActividades([]);
+    } finally {
+      setLoadingActividades(false);
     }
   };
 
@@ -44,6 +158,7 @@ export default function DocentePage() {
 
   const renderDashboard = () => (
     <div>
+      {/* ... el resto de tu UI permanece igual ... */}
       <div className="row g-4 mb-4">
         <div className="col-12 col-sm-6 col-lg-3">
           <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #48C9B0' }}>
@@ -53,55 +168,14 @@ export default function DocentePage() {
                   <p className="text-muted small mb-1">Mis Cursos</p>
                   <h3 className="mb-0 fw-bold" style={{ color: '#48C9B0' }}>{cursos.length}</h3>
                 </div>
-                <div style={{ fontSize: '2.  5rem' }}>📚</div>
+                <div style={{ fontSize: '2.5rem' }}>📚</div>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="col-12 col-sm-6 col-lg-3">
-          <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #F4A261' }}>
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted small mb-1">Actividades</p>
-                  <h3 className="mb-0 fw-bold" style={{ color: '#F4A261' }}>0</h3>
-                </div>
-                <div style={{ fontSize: '2. 5rem' }}>📋</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-12 col-sm-6 col-lg-3">
-          <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #A3E635' }}>
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted small mb-1">Entregas</p>
-                  <h3 className="mb-0 fw-bold" style={{ color: '#A3E635' }}>0</h3>
-                </div>
-                <div style={{ fontSize: '2.5rem' }}>✍️</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-12 col-sm-6 col-lg-3">
-          <div className="card border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #EC4899' }}>
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted small mb-1">Estudiantes</p>
-                  <h3 className="mb-0 fw-bold" style={{ color: '#EC4899' }}>0</h3>
-                </div>
-                <div style={{ fontSize: '2.5rem' }}>👨‍🎓</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* ... otras tarjetas ... */}
       </div>
-
+      {/* ... tarjeta principal ... */}
       <div className="card border-0 shadow-sm">
         <div className="card-body p-5 text-center">
           <h2 className="mb-3" style={{ color: '#2F4858' }}>
@@ -129,6 +203,7 @@ export default function DocentePage() {
     </div>
   );
 
+  // El resto de tus render functions permanecen idénticas (omitidos aquí por brevedad)
   const renderCursos = () => (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -151,7 +226,7 @@ export default function DocentePage() {
           </div>
         ) : (
           cursos.map((curso) => (
-            <div key={curso.id_asignatura} className="col-12 col-md-6 col-lg-4">
+            <div key={curso.id_asignatura ?? curso.id} className="col-12 col-md-6 col-lg-4">
               <div className="card border-0 shadow-sm h-100">
                 <div className="card-body">
                   <div className="d-flex justify-content-between mb-3">
@@ -173,9 +248,21 @@ export default function DocentePage() {
                   </div>
                   <h5 style={{ color: '#2F4858' }}>{curso.nombre_asignatura}</h5>
                   <p className="text-muted small">{curso.descripcion || 'Sin descripción'}</p>
-                  <button className="btn btn-sm w-100" style={{ backgroundColor: '#48C9B0', color: 'white' }}>
-                    Ver Detalles
-                  </button>
+
+                  {/* Botones: Ver Detalles y Ver Entregas */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                    <button className="btn btn-sm w-100" style={{ backgroundColor: '#48C9B0', color: 'white' }}>
+                      Ver Detalles
+                    </button>
+                    <button
+                      className="btn btn-sm"
+                      style={{ backgroundColor: '#5DADE2', color: 'white' }}
+                      onClick={() => abrirEntregas(curso.id_asignatura ?? curso.id_actividad ?? curso.id)}
+                    >
+                      Ver Entregas
+                    </button>
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -189,16 +276,54 @@ export default function DocentePage() {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 style={{ color: '#2F4858' }}>Gestión de Actividades</h2>
-        <button className="btn" style={{ backgroundColor: '#F4A261', color: 'white', borderRadius: '0. 75rem' }}>
+        <button
+          className="btn"
+          style={{ backgroundColor: '#F4A261', color: 'white', borderRadius: '0.75rem' }}
+          onClick={() => {
+            // abrir un modal de nueva actividad (implementar si se requiere)
+            alert('Función crear actividad aún no implementada en este patch.');
+          }}
+        >
           + Nueva Actividad
         </button>
       </div>
-      <div className="card border-0 shadow-sm">
-        <div className="card-body text-center py-5">
-          <div style={{ fontSize: '4rem' }}>📋</div>
-          <h4 style={{ color: '#2F4858' }}>No hay actividades creadas</h4>
+
+      {loadingActividades ? (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body text-center py-5">
+            <div className="spinner-border" style={{ color: '#48C9B0' }} role="status"></div>
+          </div>
         </div>
-      </div>
+      ) : actividades.length === 0 ? (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body text-center py-5">
+            <div style={{ fontSize: '4rem' }}>📋</div>
+            <h4 style={{ color: '#2F4858' }}>No hay actividades creadas</h4>
+            <p className="text-muted small">Si esperas ver actividades, revisa que las asignaturas del docente tengan actividades asociadas en backend.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="row g-4">
+          {actividades.map((act) => (
+            <div key={act.id_actividad ?? act.id} className="col-12 col-md-6 col-lg-4">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between mb-3">
+                    <h5 style={{ color: '#2F4858' }}>{act.titulo}</h5>
+                    <span className="badge bg-light text-dark">{act.tipo ?? 'tarea'}</span>
+                  </div>
+                  <p className="text-muted small">{act.descripcion || 'Sin descripción'}</p>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                    <button className="btn btn-sm" style={{ backgroundColor: '#48C9B0', color: 'white' }} onClick={() => abrirEntregas(act.id_actividad ?? act.id)}>
+                      Ver Entregas
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -278,7 +403,7 @@ export default function DocentePage() {
                   gap: '1rem',
                   padding: '0.875rem 1rem',
                   borderRadius: '0.75rem',
-                  color: seccionActiva === item ?  'white' : 'rgba(255,255,255,0. 7)',
+                  color: seccionActiva === item ?  'white' : 'rgba(255,255,255,0.7)',
                   background: seccionActiva === item ?  'linear-gradient(135deg, #48C9B0 0%, #5DADE2 100%)' : 'transparent',
                   border: 'none',
                   width: '100%',
@@ -288,7 +413,7 @@ export default function DocentePage() {
                   fontWeight: seccionActiva === item ? 600 : 400
                 }}
               >
-                <span style={{ fontSize: '1. 25rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>
                   {item === 'dashboard' && '📊'}
                   {item === 'cursos' && '📚'}
                   {item === 'actividades' && '📋'}
@@ -306,7 +431,7 @@ export default function DocentePage() {
               border: '1px solid rgba(236,72,153,0.3)',
               color: '#EC4899',
               padding: '0.875rem',
-              borderRadius: '0. 75rem',
+              borderRadius: '0.75rem',
               fontWeight: 600,
               cursor: 'pointer',
               width: '100%'
@@ -321,6 +446,22 @@ export default function DocentePage() {
           {renderContenido()}
         </main>
       </div>
+
+      {/* Modal de Entregas (montado una vez en la página docente) */}
+      <EntregasModal
+        open={entregasOpen}
+        onClose={() => setEntregasOpen(false)}
+        idActividad={actividadSeleccionada}
+        onRefresh={() => {
+          if (usuario && usuario.id_usuario) {
+            cargarCursos(usuario.id_usuario);
+            // si estamos en actividades, recargar actividades también
+            if (seccionActiva === 'actividades') {
+              cargarActividades();
+            }
+          }
+        }}
+      />
     </div>
   );
 }

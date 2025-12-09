@@ -14,7 +14,7 @@ router.post('/registro', async(req, resp) =>{
 
         // Compañeros, validamos que vengan todos los datos necesarios (sin id_usuario porque es AUTO_INCREMENT)
         if (!id_rol || !nombre || !apellido || !email || !password){
-            return resp.status(400). json ({mensaje: 'Faltan datos obligatorios'})
+            return resp.status(400).json ({mensaje: 'Faltan datos obligatorios'})
         }
 
         // Compañeros, verificamos que el email no esté ya registrado
@@ -38,13 +38,13 @@ router.post('/registro', async(req, resp) =>{
         })
 
         // Compañeros, enviamos la respuesta exitosa
-        resp. status(201).json({
+        resp.status(201).json({
             mensaje: 'Usuario creado exitosamente',
             usuario:{
                 id_usuario: nuevoUsuario.id_usuario,
-                nombre: nuevoUsuario. nombre,
+                nombre: nuevoUsuario.nombre,
                 apellido: nuevoUsuario.apellido,
-                email: nuevoUsuario. email,
+                email: nuevoUsuario.email,
                 id_rol: nuevoUsuario.id_rol
             }
         });
@@ -186,7 +186,7 @@ router.put('/usuarios/:id', async (req, resp) => {
         resp.json({
             mensaje: 'Usuario actualizado exitosamente',
             usuario: {
-                id_usuario: usuario. id_usuario,
+                id_usuario: usuario.id_usuario,
                 nombre: usuario.nombre,
                 apellido: usuario.apellido,
                 email: usuario.email,
@@ -196,13 +196,13 @@ router.put('/usuarios/:id', async (req, resp) => {
         });
 
     } catch (error) {
-        console. log(error);
-        resp. status(500).json({ mensaje: 'Error al actualizar usuario' });
+        console.log(error);
+        resp.status(500).json({ mensaje: 'Error al actualizar usuario' });
     }
 });
 
 // Compañeros, esta ruta ELIMINA un usuario
-router. delete('/usuarios/:id', async (req, resp) => {
+router.delete('/usuarios/:id', async (req, resp) => {
     try {
         const { id } = req.params;
 
@@ -214,14 +214,14 @@ router. delete('/usuarios/:id', async (req, resp) => {
         }
 
         // Compañeros, eliminamos el usuario
-        await usuario. destroy();
+        await usuario.destroy();
 
         resp.json({
             mensaje: 'Usuario eliminado exitosamente',
             usuario_eliminado: {
                 id_usuario: id,
                 nombre: usuario.nombre,
-                apellido: usuario. apellido,
+                apellido: usuario.apellido,
                 email: usuario.email
             }
         });

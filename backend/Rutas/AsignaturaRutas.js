@@ -14,7 +14,7 @@ const router = express.Router();
 router.get('/asignaturas', async (req, resp) => {
     try {
         // Compañeros, obtenemos todas las asignaturas y sus docentes asignados
-        const asignaturas = await Asignatura. findAll({
+        const asignaturas = await Asignatura.findAll({
             attributes: ['id_asignatura', 'nombre_asignatura', 'descripcion', 'codigo_curso', 'id_docente', 'fecha_creacion', 'activo'],
             include: [{
                 model: Usuario,
@@ -81,7 +81,7 @@ router.post('/asignaturas', async (req, resp) => {
             if (!docente) {
                 return resp.status(404).json({ mensaje: 'El docente especificado no existe' });
             }
-            if (docente. id_rol !== 2) {
+            if (docente.id_rol !== 2) {
                 return resp.status(400).json({ mensaje: 'El usuario especificado no es un docente' });
             }
         }
@@ -105,7 +105,7 @@ router.post('/asignaturas', async (req, resp) => {
         });
 
         // Compañeros, obtenemos la asignatura con los datos del docente
-        const asignaturaCompleta = await Asignatura. findByPk(nuevaAsignatura.id_asignatura, {
+        const asignaturaCompleta = await Asignatura.findByPk(nuevaAsignatura.id_asignatura, {
             include: [{
                 model: Usuario,
                 as: 'docente',
@@ -119,8 +119,8 @@ router.post('/asignaturas', async (req, resp) => {
         });
 
     } catch (error) {
-        console. log(error);
-        resp. status(500).json({ mensaje: 'Error al crear asignatura' });
+        console.log(error);
+        resp.status(500).json({ mensaje: 'Error al crear asignatura' });
     }
 });
 
@@ -143,7 +143,7 @@ router.put('/asignaturas/:id', async (req, resp) => {
             if (!docente) {
                 return resp.status(404).json({ mensaje: 'El docente especificado no existe' });
             }
-            if (docente. id_rol !== 2) {
+            if (docente.id_rol !== 2) {
                 return resp.status(400).json({ mensaje: 'El usuario especificado no es un docente' });
             }
         }
@@ -152,7 +152,7 @@ router.put('/asignaturas/:id', async (req, resp) => {
         if (codigo_curso && codigo_curso !== asignatura.codigo_curso) {
             const codigoExistente = await Asignatura.findOne({ where: { codigo_curso } });
             if (codigoExistente) {
-                return resp. status(409).json({ mensaje: 'Este código de curso ya está en uso' });
+                return resp.status(409).json({ mensaje: 'Este código de curso ya está en uso' });
             }
         }
 
@@ -160,10 +160,10 @@ router.put('/asignaturas/:id', async (req, resp) => {
         const datosActualizar = {};
         
         if (nombre_asignatura) datosActualizar.nombre_asignatura = nombre_asignatura;
-        if (descripcion !== undefined) datosActualizar. descripcion = descripcion;
+        if (descripcion !== undefined) datosActualizar.descripcion = descripcion;
         if (codigo_curso) datosActualizar.codigo_curso = codigo_curso;
         if (id_docente !== undefined) datosActualizar.id_docente = id_docente;
-        if (activo !== undefined) datosActualizar. activo = activo;
+        if (activo !== undefined) datosActualizar.activo = activo;
 
         // Compañeros, actualizamos la asignatura
         await asignatura.update(datosActualizar);
@@ -216,8 +216,8 @@ router.delete('/asignaturas/:id', async (req, resp) => {
         });
 
     } catch (error) {
-        console. log(error);
-        resp. status(500).json({ mensaje: 'Error al eliminar asignatura' });
+        console.log(error);
+        resp.status(500).json({ mensaje: 'Error al eliminar asignatura' });
     }
 });
 
