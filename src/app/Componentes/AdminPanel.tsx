@@ -87,7 +87,19 @@ export default function AdminPanel({
     try {
       const resp = await fetch("http://localhost:5050/matricula/matriculas");
       const data = await resp.json();
-      setMatriculas(data. matriculas || []);
+      
+      // Adaptar los datos para el formato de la tabla
+      const matriculasAdaptadas = (data.matriculas || []).map((mat: any) => ({
+        id_matricula: mat.id_matricula,
+        estudiante: mat.estudiante ? `${mat.estudiante.nombre} ${mat.estudiante.apellido}` : 'N/A',
+        email_estudiante: mat.estudiante?.email || 'N/A',
+        nombre_asignatura: mat.asignatura?.nombre_asignatura || 'N/A',
+        codigo_curso: mat.asignatura?.codigo_curso || 'N/A',
+        estado: mat.estado,
+        fecha_matricula: mat.fecha_matricula,
+      }));
+      
+      setMatriculas(matriculasAdaptadas);
       
       // Actualizar estadísticas
       setStats(prev => ({
@@ -172,8 +184,8 @@ export default function AdminPanel({
       // Adaptamos los datos para que coincidan con el formato de la tabla
       const matriculasAdaptadas = data.estudiantes.map((est: any) => ({
         id_matricula: est.id_matricula,
-        estudiante: est.estudiante,
-        email_estudiante: est.email,
+        estudiante: est.estudiante ? `${est.estudiante.nombre} ${est.estudiante.apellido}` : 'N/A',
+        email_estudiante: est.estudiante?.email || est.email || 'N/A',
         nombre_asignatura:
           cursos.find((c: any) => c.id_asignatura === parseInt(idAsignatura))
             ?.nombre_asignatura || "",
@@ -313,7 +325,7 @@ export default function AdminPanel({
           payload.password = formUsuario.password;
         }
         const resp = await fetch(
-          `http://localhost:5050/usuario/usuario/${usuarioEdit.id_usuario}`,
+          `http://localhost:5050/usuario/usuarios/${usuarioEdit.id_usuario}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -361,7 +373,7 @@ export default function AdminPanel({
   const eliminarUsuario = async (id: number) => {
     if (! confirm("⚠️ ¿Eliminar este usuario?")) return;
     try {
-      const resp = await fetch(`http://localhost:5050/usuario/usuario/${id}`, {
+      const resp = await fetch(`http://localhost:5050/usuario/usuarios/${id}`, {
         method: "DELETE",
       });
       if (resp.ok) {

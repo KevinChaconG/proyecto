@@ -38,7 +38,7 @@ try {
   app.use('/matricula', matriculaRoutes);
 } catch (err) {
   try {
-    matriculaRoutes = require('./routes/matriculaRoutes');
+    matriculaRoutes = require('./routes/MatriculaRoutes');
     app.use('/matricula', matriculaRoutes);
   } catch (err2) {
     console.warn('No se encontró archivo de rutas de matricula en ./Rutas ni ./routes (es opcional):', err2.message);

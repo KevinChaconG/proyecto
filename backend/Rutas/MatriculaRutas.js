@@ -9,6 +9,37 @@ const router = express.Router();
 // RUTAS PARA GESTIÓN DE MATRÍCULAS
 // ============================================
 
+// Compañeros, esta ruta lista TODAS las matrículas (para el admin panel)
+router.get('/matriculas', async (req, resp) => {
+    try {
+        const matriculas = await Matricula.findAll({
+            include: [
+                {
+                    model: Asignatura,
+                    as: 'asignatura',
+                    attributes: ['id_asignatura', 'nombre_asignatura', 'codigo_curso']
+                },
+                {
+                    model: Usuario,
+                    as: 'estudiante',
+                    attributes: ['id_usuario', 'nombre', 'apellido', 'email']
+                }
+            ],
+            order: [['fecha_matricula', 'DESC']]
+        });
+
+        resp.json({
+            mensaje: 'Lista de todas las matrículas',
+            total: matriculas.length,
+            matriculas: matriculas
+        });
+
+    } catch (error) {
+        console.log(error);
+        resp.status(500).json({ mensaje: 'Error al obtener matrículas' });
+    }
+});
+
 // Compañeros, esta ruta lista los cursos en los que está matriculado un estudiante
 router.get('/estudiante/:id_estudiante/matriculas', async (req, resp) => {
     try {
