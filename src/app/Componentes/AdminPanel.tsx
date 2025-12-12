@@ -1163,7 +1163,7 @@ export default function AdminPanel({
         </aside>
 
         {/* Main Content */}
-        <main className="main-content">{renderContenido()}</main>
+        <main className="main-content flex-grow-1">{renderContenido()}</main>
       </div>
 
       {/* Modal Usuario */}
