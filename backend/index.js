@@ -53,6 +53,10 @@ app.use('/entrega', entregaRutas);
 const docenteRoutes = require('./Rutas/DocenteRutas');
 app.use('/docente', docenteRoutes);
 
+// Rutas de reportes
+const reporteRutas = require('./Rutas/reporteRutas');
+app.use('/reporte', reporteRutas);
+
 // Health check simple
 app.get('/_health', (req, res) => res.json({ ok: true, env: process.env.NODE_ENV || 'dev' }));
 

@@ -3,7 +3,84 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-type Seccion = "dashboard" | "usuarios" | "cursos" | "matriculas";
+
+function VistaReportes() {
+  const [reporte, setReporte] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchReporte = async () => {
+      try {
+        const resp = await fetch('http://localhost:5050/reporte/promedios-por-curso');
+        if (!resp.ok) {
+          throw new Error('Error al cargar el reporte desde el servidor');
+        }
+        const data = await resp.json();
+        setReporte(data.reporte || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReporte();
+  }, []);
+
+  return (
+    <div>
+      <h2 className="mb-4" style={{ color: '#2F4858' }}>
+        Reporte de Calificaciones por Curso
+      </h2>
+      <div className="card border-0 shadow-sm">
+        <div className="card-body">
+          {loading && <div className="text-center py-5"><div className="spinner-border" role="status"></div></div>}
+          {error && <div className="alert alert-danger">{error}</div>}
+          {!loading && !error && (
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead style={{ backgroundColor: '#F9FAFB' }}>
+                  <tr>
+                    <th>ID Curso</th>
+                    <th>Nombre del Curso</th>
+                    <th>Código</th>
+                    <th className="text-center">Entregas Calificadas</th>
+                    <th className="text-center">Promedio General</th>
+                  </tr>
+                </thead>
+                <tbody>
+  {reporte.length === 0 ? (
+    <tr><td colSpan={5} className="text-center text-muted py-4">No hay datos para mostrar.</td></tr>
+  ) : (
+    reporte.map((item) => (
+      <tr key={item.id_asignatura}>
+        <td>{item.id_asignatura}</td>
+        <td>{item.nombre_asignatura}</td>
+        <td><span className="badge bg-secondary">{item.codigo_curso}</span></td>
+        <td className="text-center">{item.total_entregas_calificadas}</td>
+        
+       
+        <td className="text-center">
+          <span className={`badge fs-6 ${parseFloat(item.promedio_calificaciones) >= 70 ? 'bg-success' : 'bg-warning text-dark'}`}>
+            {item.promedio_calificaciones}
+          </span>
+        </td>
+
+      </tr>
+    ))
+  )}
+</tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+type Seccion = "dashboard" | "usuarios" | "cursos" | "matriculas" | "reportes";
 
 interface Usuario {
   id_usuario: number;
@@ -952,9 +1029,14 @@ export default function AdminPanel({
             </div>
           </div>
         );
+    
+  
+
+        case "reportes":
+        return <VistaReportes />;
+
     }
   }
-
   return (
     <>
       <style jsx>{`
@@ -1155,6 +1237,20 @@ export default function AdminPanel({
                 <span>Matrículas</span>
               </button>
             </li>
+                
+            <li className="menu-item">
+              <button
+                className={`menu-link ${
+                  seccionActiva === "reportes" ? "active" : ""
+                }`}
+                onClick={() => setSeccionActiva("reportes")}
+              >
+                <span style={{ fontSize: "1.25rem" }}>📈</span>
+                <span>Reportes</span>
+              </button>
+            </li>
+
+  
           </ul>
 
           <button className="logout-btn" onClick={handleLogout}>
