@@ -1,11 +1,13 @@
 const { DataTypes } = require('sequelize')
 const sequelize = require('../db/Conexion');
 
+// Compañeros, este modelo define la estructura de la tabla usuarios
 const Usuario = sequelize.define('Usuarios', {
   id_usuario: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    allowNull:false
+    autoIncrement: true,  // Compañeros, esto permite que MySQL genere el ID automáticamente
+    allowNull: false
   },
   id_rol: {
     type: DataTypes.INTEGER,
@@ -30,11 +32,17 @@ const Usuario = sequelize.define('Usuarios', {
   },
   fecha_creacion: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    defaultValue: DataTypes.NOW  // Compañeros, esto pone la fecha actual por defecto
+  },
+  activo: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true  // Compañeros, por defecto los usuarios están activos
   }
 }, {
-  tableName: 'usuarios', 
-  timestamps: false 
+  tableName: 'usuarios',  // Compañeros, nombre de la tabla en MySQL
+  timestamps: false  // Compañeros, no usamos createdAt/updatedAt de Sequelize
 });
 
 module.exports = Usuario;

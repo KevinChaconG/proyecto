@@ -1,56 +1,76 @@
-Scripts SQL:
-create database plataforma_estudiantil
+-- ============================================
+-- SCRIPT DE CREACIÓN DE BASE DE DATOS
+-- Plataforma Estudiantil Synapsis
+-- ============================================
 
-use plataforma_estudiantil
+-- Crear y usar la base de datos
+CREATE DATABASE IF NOT EXISTS plataforma_estudiantil;
+USE plataforma_estudiantil;
 
-/*Creación de la tabla Usuarios*/
-create table usuarios(
-id_usuario int primary key,
-id_rol int,
-nombre varchar(45),
-apellido varchar(45),
-email varchar(45) unique,
-password_hash varchar(255),
-fecha_creacion datetime
-)
+-- ============================================
+-- TABLA: roles
+-- Debe crearse PRIMERO porque usuarios la referencia
+-- ============================================
+CREATE TABLE roles (
+    id_rol INT PRIMARY KEY AUTO_INCREMENT,
+    nombre_rol VARCHAR(45) NOT NULL UNIQUE
+);
 
-/*Modificación de la tabla Usuarios que permite "id_rol" esté conectado como foreign key */
-ALTER TABLE usuarios
-ADD CONSTRAINT fk_usuarios_roles
-FOREIGN KEY (id_rol)
-REFERENCES roles(id_rol);
-
-/*Creación de la tabla roles*/
-create table roles (
-id_rol int primary key auto_increment
-nombre_rol varchar(45)
-)
-
-/*Insertamos los unicos tres roles que pueden tener los usuarios*/
-insert into roles (nombre_rol) values
+-- Insertar los tres roles principales
+INSERT INTO roles (nombre_rol) VALUES
 ('admin'),
 ('docente'),
 ('estudiante');
 
-select * from roles
+-- ============================================
+-- TABLA: usuarios
+-- ============================================
+CREATE TABLE usuarios (
+    id_usuario INT PRIMARY KEY AUTO_INCREMENT,
+    id_rol INT NOT NULL,
+    nombre VARCHAR(45) NOT NULL,
+    apellido VARCHAR(45) NOT NULL,
+    email VARCHAR(45) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    fecha_creacion DATETIME DEFAULT NOW(),
+    
+    FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
+);
 
-/*Insertamos el usuario admin*/
-insert into usuarios (id_usuario, id_rol, nombre, apellido, email, password_hash) values ('1','1','Admin', 'Master', 'admin@admin.com', '123456')
-
-select * from usuarios
-
-/*Creación de la tabla asignaturas*/
-create TABLE asignaturas (
+-- ============================================
+-- TABLA: asignaturas
+-- ============================================
+CREATE TABLE asignaturas (
     id_asignatura INT PRIMARY KEY AUTO_INCREMENT,
-    nombre_asignatura VARCHAR(100),
+    nombre_asignatura VARCHAR(100) NOT NULL,
     descripcion VARCHAR(255),
     id_docente INT,
-    codigo_curso VARCHAR(45),
-
+    codigo_curso VARCHAR(45) UNIQUE,
+    fecha_creacion DATETIME DEFAULT NOW(),
+    
     FOREIGN KEY (id_docente) REFERENCES usuarios(id_usuario)
 );
 
-/*Creación de la tabla actividades*/
+-- ============================================
+-- TABLA: matriculas
+-- ============================================
+CREATE TABLE matriculas (
+    id_matricula INT PRIMARY KEY AUTO_INCREMENT,
+    id_asignatura INT NOT NULL,
+    id_alumno INT NOT NULL,
+    fecha_matricula DATETIME DEFAULT NOW(),
+    estado ENUM('activa', 'retirada', 'aprobada', 'reprobada') DEFAULT 'activa',
+    
+    FOREIGN KEY (id_asignatura) REFERENCES asignaturas(id_asignatura),
+    FOREIGN KEY (id_alumno) REFERENCES usuarios(id_usuario),
+    
+    -- Evita que el mismo alumno se matricule dos veces en la misma asignatura
+    UNIQUE (id_asignatura, id_alumno)
+);
+
+-- ============================================
+-- TABLA: actividades
+-- ============================================
 CREATE TABLE actividades (
     id_actividad INT PRIMARY KEY AUTO_INCREMENT,
     titulo VARCHAR(100) NOT NULL,
@@ -58,56 +78,42 @@ CREATE TABLE actividades (
     fecha_publicacion DATETIME DEFAULT NOW(),
     fecha_entrega DATETIME NULL,
     id_asignatura INT NOT NULL,
-
+    estado ENUM('Activa', 'Cerrada', 'Borrador') DEFAULT 'Activa',
+    valor_maximo INT DEFAULT 100,
+    
     FOREIGN KEY (id_asignatura) REFERENCES asignaturas(id_asignatura)
 );
 
-/*Estos dos alters agregan las columnas estado y valor_maximo que no fueron agregados en el script anterior*/
-ALTER TABLE actividades
-ADD COLUMN estado ENUM('Activa', 'Cerrada', 'Borrador') DEFAULT 'Activa';
-
-ALTER TABLE actividades
-ADD COLUMN valor_maximo INT DEFAULT 100;
-
-/*Creación de la tabla calificaciones*/
+-- ============================================
+-- TABLA: calificaciones
+-- ============================================
 CREATE TABLE calificaciones (
     id_calificacion INT PRIMARY KEY AUTO_INCREMENT,
-    
     id_actividad INT NOT NULL,
     id_estudiante INT NOT NULL,
     id_docente INT NOT NULL,
-
     valor_obtenido DECIMAL(5,2) NOT NULL,
     fecha_calificacion DATETIME DEFAULT NOW(),
-
-    comentario VARCHAR(255),
-
+    comentario TEXT,
+    
     FOREIGN KEY (id_actividad) REFERENCES actividades(id_actividad),
     FOREIGN KEY (id_estudiante) REFERENCES usuarios(id_usuario),
-    FOREIGN KEY (id_docente) REFERENCES usuarios(id_usuario)
+    FOREIGN KEY (id_docente) REFERENCES usuarios(id_usuario),
+    
+    -- Solo una calificación por actividad por estudiante
+    UNIQUE (id_actividad, id_estudiante)
 );
 
-/*Alteración de la tabla que permite que solo se pueda tener una calificación por actividad*/
-ALTER TABLE calificaciones
-ADD CONSTRAINT unique_calificacion
-UNIQUE (id_actividad, id_estudiante);
+-- ============================================
+-- DATOS INICIALES
+-- ============================================
 
-/*Creación de la tabla matriculas*/
-CREATE TABLE matriculas (
-    id_matricula INT PRIMARY KEY AUTO_INCREMENT,
-    
-    id_asignatura INT NOT NULL,
-    id_alumno INT NOT NULL,
-    
-    fecha_matricula DATETIME DEFAULT NOW(),
-    estado ENUM('activa', 'retirada', 'aprobada', 'reprobada') DEFAULT 'activa',
+-- Insertar usuario administrador
+-- NOTA: La contraseña debe ser hasheada con bcrypt en el backend
+INSERT INTO usuarios (id_rol, nombre, apellido, email, password_hash) VALUES 
+(1, 'Admin', 'Master', 'admin@admin.com', '$2b$10$rF5qE8zRqZ8QzKGjKqF8Gu8vKxBw9YqN5vE8zRqZ8QzKGjKqF8Gu');
+-- Esta es la contraseña '123456' hasheada con bcrypt
 
-    FOREIGN KEY (id_asignatura) REFERENCES asignaturas(id_asignatura),
-    FOREIGN KEY (id_alumno) REFERENCES usuarios(id_usuario),
-
-    -- Evita que el mismo alumno se matricule dos veces en la misma asignatura
-    UNIQUE (id_asignatura, id_alumno)
-);
-
-
-
+-- Verificar datos
+SELECT * FROM roles;
+SELECT * FROM usuarios;

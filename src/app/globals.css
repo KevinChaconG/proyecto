@@ -1,13 +1,7 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Tema claro fijo para toda la app */
+  --background: #f9fafb;
+  --foreground: #111827;
 }
 
 html,
@@ -35,20 +29,116 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
+/* (Quitamos el modo oscuro automático basado en prefers-color-scheme)
+   Si algún día quieres dark mode, lo hacemos con una clase .dark en el body, no automático */
+
+/* -------------------- NAVBAR -------------------- */
 
 .nav-link {
-  color: #0b4a24 !important;     
-  background-color: transparent;   
+  color: #0b4a24 !important;
+  background-color: transparent;
 }
 
 .nav-link.active {
-  background-color: #ffa705 !important; 
-  color: #0b4a24 !important;     
+  background-color: #ffa705 !important;
+  color: #0b4a24 !important;
   font-weight: bold;
   border-radius: 10px;
+}
+
+/* -------------------- MODALES PERSONALIZADOS -------------------- */
+
+/* Fondo del modal - estilo "Nueva Actividad" claro */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(148, 163, 184, 0.35); /* gris translúcido */
+  backdrop-filter: blur(1px);                  /* un pelín de blur */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+/* Tarjeta principal del modal */
+.modal-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  padding: 2rem 2.5rem;
+  max-width: 720px;
+  width: min(720px, 92%);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  padding-bottom: 0.75rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2f4858;
+}
+
+/* Footer */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+  padding-top: 0.75rem;
+}
+
+/* Botón de cerrar (X) */
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+}
+.btn-close:hover {
+  color: #111827;
+}
+
+/* Ítems de la lista de entregas dentro del modal */
+.modal-card .list-group-item {
+  border: none;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+/* Título del estudiante */
+.modal-card .list-group-item strong {
+  color: #2f4858;
+}
+
+/* Botón primario en este modal (Editar / Actualizar) */
+.modal-card .btn-primary {
+  background-color: #48c9b0;
+  border-color: #48c9b0;
+}
+.modal-card .btn-primary:hover {
+  background-color: #36a893;
+  border-color: #36a893;
+}
+
+/* Botón normal (Cerrar) */
+.modal-card .btn {
+  border-radius: 0.5rem;
 }
