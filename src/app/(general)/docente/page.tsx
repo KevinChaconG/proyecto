@@ -21,6 +21,12 @@ export default function DocentePage() {
   // --- Actividades (para la pestaña Actividades) ---
   const [actividades, setActividades] = useState<any[]>([]);
   const [loadingActividades, setLoadingActividades] = useState(false);
+  
+  // --- Estados para el modal de estudiantes matriculados ---
+  const [estudiantesModalOpen, setEstudiantesModalOpen] = useState(false);
+  const [estudiantesMatriculados, setEstudiantesMatriculados] = useState<any[]>([]);
+  const [cursoSeleccionado, setCursoSeleccionado] = useState<any>(null);
+  const [loadingEstudiantes, setLoadingEstudiantes] = useState(false);
 
   function abrirEntregas(idActividadRaw: any) {
     console.log('abrirEntregas raw value:', idActividadRaw);
@@ -34,6 +40,45 @@ export default function DocentePage() {
     setActividadSeleccionada(id);
     setEntregasOpen(true);
   }
+
+  // Función para ver estudiantes matriculados en un curso
+  const verEstudiantesMatriculados = async (curso: any) => {
+    const idAsignatura = curso.id_asignatura ?? curso.idAsignatura ?? curso.id;
+    if (!idAsignatura) {
+      alert('ID de asignatura inválido');
+      return;
+    }
+    
+    setCursoSeleccionado(curso);
+    setEstudiantesModalOpen(true);
+    setLoadingEstudiantes(true);
+    
+    try {
+      const resp = await fetch(`http://localhost:5050/matricula/asignatura/${idAsignatura}/estudiantes`);
+      const data = await resp.json();
+      
+      if (resp.ok) {
+        // Extraer los estudiantes de la respuesta
+        const estudiantes = (data.estudiantes || []).map((mat: any) => ({
+          id_usuario: mat.estudiante?.id_usuario || mat.id_usuario,
+          nombre: mat.estudiante?.nombre || mat.nombre,
+          apellido: mat.estudiante?.apellido || mat.apellido,
+          email: mat.estudiante?.email || mat.email,
+          fecha_matricula: mat.fecha_matricula,
+          estado: mat.estado
+        }));
+        setEstudiantesMatriculados(estudiantes);
+      } else {
+        console.error('Error al cargar estudiantes:', data.mensaje);
+        setEstudiantesMatriculados([]);
+      }
+    } catch (error) {
+      console.error('Error al cargar estudiantes matriculados:', error);
+      setEstudiantesMatriculados([]);
+    } finally {
+      setLoadingEstudiantes(false);
+    }
+  };
   // ------------------------------------------------------
 
   useEffect(() => {
@@ -249,9 +294,16 @@ export default function DocentePage() {
                   <h5 style={{ color: '#2F4858' }}>{curso.nombre_asignatura}</h5>
                   <p className="text-muted small">{curso.descripcion || 'Sin descripción'}</p>
 
-                  {/* Botones: Ver Detalles y Ver Entregas */}
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                    <button className="btn btn-sm w-100" style={{ backgroundColor: '#48C9B0', color: 'white' }}>
+                  {/* Botones: Ver Estudiantes, Ver Detalles y Ver Entregas */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                    <button 
+                      className="btn btn-sm" 
+                      style={{ backgroundColor: '#10b981', color: 'white' }}
+                      onClick={() => verEstudiantesMatriculados(curso)}
+                    >
+                      👥 Estudiantes
+                    </button>
+                    <button className="btn btn-sm" style={{ backgroundColor: '#48C9B0', color: 'white' }}>
                       Ver Detalles
                     </button>
                     <button
@@ -462,6 +514,123 @@ export default function DocentePage() {
           }
         }}
       />
+
+      {/* Modal de Estudiantes Matriculados */}
+      {estudiantesModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '1rem',
+            padding: '2rem',
+            maxWidth: '700px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#2F4858' }}>👥 Estudiantes Matriculados</h3>
+                <p style={{ margin: '0.5rem 0 0', color: '#6b7280', fontSize: '0.9rem' }}>
+                  {cursoSeleccionado?.nombre_asignatura} ({cursoSeleccionado?.codigo_curso})
+                </p>
+              </div>
+              <button
+                onClick={() => setEstudiantesModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {loadingEstudiantes ? (
+              <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <div className="spinner-border" style={{ color: '#48C9B0' }} role="status"></div>
+                <p style={{ marginTop: '1rem', color: '#6b7280' }}>Cargando estudiantes...</p>
+              </div>
+            ) : estudiantesMatriculados.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <div style={{ fontSize: '4rem' }}>📭</div>
+                <h4 style={{ color: '#2F4858', marginTop: '1rem' }}>No hay estudiantes matriculados</h4>
+                <p style={{ color: '#6b7280' }}>Este curso aún no tiene estudiantes inscritos.</p>
+              </div>
+            ) : (
+              <div>
+                <p style={{ color: '#10b981', fontWeight: 600, marginBottom: '1rem' }}>
+                  Total: {estudiantesMatriculados.length} estudiante(s)
+                </p>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc' }}>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#374151' }}>#</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#374151' }}>Nombre</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#374151' }}>Email</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #e2e8f0', color: '#374151' }}>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estudiantesMatriculados.map((est, index) => (
+                      <tr key={est.id_usuario || index} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '0.75rem', color: '#6b7280' }}>{index + 1}</td>
+                        <td style={{ padding: '0.75rem', fontWeight: 500, color: '#2F4858' }}>
+                          {est.nombre} {est.apellido}
+                        </td>
+                        <td style={{ padding: '0.75rem', color: '#6b7280' }}>{est.email}</td>
+                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            backgroundColor: est.estado === 'activa' ? '#d1fae5' : '#fef3c7',
+                            color: est.estado === 'activa' ? '#065f46' : '#92400e'
+                          }}>
+                            {est.estado === 'activa' ? 'Activo' : est.estado || 'N/A'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
+              <button
+                onClick={() => setEstudiantesModalOpen(false)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: 500
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
